@@ -3,6 +3,7 @@ package com.stx.xhb.dmgameapp.mvp.contract;
 import com.stx.core.mvp.IModel;
 import com.stx.core.mvp.IView;
 import com.stx.xhb.dmgameapp.data.entity.GameListBean;
+import com.stx.xhb.dmgameapp.data.entity.HotGameBean;
 
 import java.util.List;
 
@@ -16,13 +17,13 @@ import java.util.List;
 public interface GetGameListContract {
 
     interface getGameListModel extends IModel {
-        void getGameListData(String appId, int page);
+        void getGameListData();
     }
 
 
     interface getGameListDataView extends IView {
 
-        void getGameListDataSuccess(List<GameListBean.HtmlEntity> listEntity);
+        void getGameListDataSuccess(GameListBean dataBean);
 
         void getGameListDataFailed(String msg);
 

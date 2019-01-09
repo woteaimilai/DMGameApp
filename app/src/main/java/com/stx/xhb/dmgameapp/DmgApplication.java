@@ -38,7 +38,6 @@ public class DmgApplication extends BaseApplication {
         ToastManager.instance.init(this);
         //用户数据初始化
         AppUser.init();
-
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
                 .addInterceptor(new LoggerInterceptor("==3dm==", BuildConfig.DEBUG))
                 .connectTimeout(10000L, TimeUnit.MILLISECONDS)
@@ -57,6 +56,7 @@ public class DmgApplication extends BaseApplication {
         super.attachBaseContext(base);
         MultiDex.install(this);
     }
+
 
     public enum ToastManager {
 
@@ -106,7 +106,7 @@ public class DmgApplication extends BaseApplication {
          * 不设置会默认所有activity都可以显示弹窗;
          */
         Beta.canShowUpgradeActs.add(MainActivity.class);
-        Bugly.init(getApplicationContext(), "1105172050", false);
+        Bugly.init(getApplicationContext(), "1105172050", BuildConfig.DEBUG);
     }
 
 }

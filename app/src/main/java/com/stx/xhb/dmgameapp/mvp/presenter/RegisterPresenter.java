@@ -1,12 +1,16 @@
 package com.stx.xhb.dmgameapp.mvp.presenter;
 
 import android.text.TextUtils;
+import android.widget.TextView;
 
 import com.stx.core.mvp.BasePresenter;
 import com.stx.core.utils.GsonUtil;
 import com.stx.xhb.dmgameapp.config.API;
 import com.stx.xhb.dmgameapp.config.Constants;
+import com.stx.xhb.dmgameapp.data.callback.LoadTaskCallback;
 import com.stx.xhb.dmgameapp.data.entity.UserInfoBean;
+import com.stx.xhb.dmgameapp.data.remote.TasksRepositoryProxy;
+import com.stx.xhb.dmgameapp.http.BaseResponse;
 import com.stx.xhb.dmgameapp.mvp.contract.RegisterContract;
 import com.stx.xhb.dmgameapp.utils.ToastUtil;
 import com.zhy.http.okhttp.OkHttpUtils;
@@ -14,6 +18,7 @@ import com.zhy.http.okhttp.callback.StringCallback;
 
 import okhttp3.Call;
 import okhttp3.Request;
+import rx.Subscription;
 
 /**
  * Author：xiaohaibin
@@ -22,142 +27,116 @@ import okhttp3.Request;
  * Github：https://github.com/xiaohaibin/
  * Describe：
  */
-
-public class RegisterPresenter extends BasePresenter<RegisterContract.registerView,RegisterContract.registerModel> implements RegisterContract.registerModel {
+public class RegisterPresenter extends BasePresenter<RegisterContract.registerView> implements RegisterContract.registerModel {
 
     @Override
-    public void register(final String username, final String passwd, String ckpasswd, String email) {
+    public void register(String username, String passwd, String code) {
         if (TextUtils.isEmpty(username)) {
-            ToastUtil.show("请填写用户名");
+            ToastUtil.show("请填写手机号");
             return;
         }
         if (TextUtils.isEmpty(passwd)) {
             ToastUtil.show("请填写密码");
             return;
         }
-        if (TextUtils.isEmpty(ckpasswd)) {
-            ToastUtil.show("请填写确认密码");
+        if (TextUtils.isEmpty(code)) {
+            ToastUtil.show("请填写验证码");
             return;
         }
-        if (TextUtils.isEmpty(email)) {
-            ToastUtil.show("请填写邮箱");
+        if (getView() == null) {
             return;
         }
-        if (getView()==null){
+        Subscription subscription = TasksRepositoryProxy.getInstance().register(username, passwd, code, new LoadTaskCallback<String>() {
+            @Override
+            public void onStart() {
+                getView().showLoading();
+            }
+
+            @Override
+            public void onCompleted() {
+                getView().hideLoading();
+            }
+
+            @Override
+            public void onTaskLoaded(String data) {
+                getView().registerSuccess(data);
+            }
+
+            @Override
+            public void onDataNotAvailable(String msg) {
+                getView().registerFailed(msg);
+            }
+        });
+        addSubscription(subscription);
+    }
+
+    @Override
+    public void resetPwd(String username, String passwd, String code) {
+        if (TextUtils.isEmpty(username)) {
+            ToastUtil.show("请填写手机号");
             return;
         }
-        OkHttpUtils.postString()
-                .content(GsonUtil.newGson().toJson(new RegisterContentEntity("userregister", email, username, passwd, ckpasswd)))
-                .url(API.USER_API)
-                .build()
-                .execute(new StringCallback() {
-                    @Override
-                    public void onBefore(Request request, int id) {
-                        getView().showLoading();
-                    }
-
-                    @Override
-                    public void onError(Call call, Exception e, int id) {
-                        getView().hideLoading();
-                        getView().registerFailed(e.getMessage());
-                    }
-
-                    @Override
-                    public void onResponse(String response, int id) {
-                        if (!TextUtils.isEmpty(response)) {
-                            UserInfoBean userInfoBean = GsonUtil.newGson().fromJson(response, UserInfoBean.class);
-                            if (userInfoBean.getCode() == Constants.SERVER_SUCCESS) {
-                                toLogin(username,passwd,"0","");
-                            } else {
-                                getView().hideLoading();
-                                getView().registerFailed(userInfoBean.getMsg());
-                            }
-                        }
-                    }
-                });
-    }
-
-    private void toLogin(String username, String pwd, String questionid, String answer) {
-        OkHttpUtils.postString()
-                .content(GsonUtil.newGson().toJson(new LoginPresenter.LoginContentEntity("userlogin", username, pwd, answer, questionid)))
-                .url(API.USER_API)
-                .build()
-                .execute(new StringCallback() {
-
-                    @Override
-                    public void onError(Call call, Exception e, int id) {
-                        getView().hideLoading();
-                        getView().registerFailed(e.getMessage());
-                    }
-
-                    @Override
-                    public void onResponse(String response, int id) {
-                        if (!TextUtils.isEmpty(response)) {
-                            UserInfoBean userInfoBean = GsonUtil.newGson().fromJson(response, UserInfoBean.class);
-                            if (userInfoBean.getCode() == Constants.SERVER_SUCCESS) {
-                                getUserInfo(userInfoBean);
-                            } else {
-                                getView().hideLoading();
-                                getView().registerFailed(userInfoBean.getMsg());
-                            }
-                        }
-                    }
-                });
-    }
-
-    private void getUserInfo(UserInfoBean infoEntity) {
-        OkHttpUtils.postString()
-                .content(GsonUtil.newGson().toJson(new LoginPresenter.getUserInfoContentEntity("userinfo", infoEntity.getUid())))
-                .url(API.USER_API)
-                .build()
-                .execute(new StringCallback() {
-                    @Override
-                    public void onError(Call call, Exception e, int id) {
-                        getView().registerFailed(e.getMessage());
-                    }
-
-                    @Override
-                    public void onResponse(String response, int id) {
-                        if (!TextUtils.isEmpty(response)) {
-                            UserInfoBean userInfoBean = GsonUtil.newGson().fromJson(response, UserInfoBean.class);
-                            if (userInfoBean.getCode() == Constants.SERVER_SUCCESS) {
-                                getView().registerSuccess(userInfoBean);
-                            } else {
-                                getView().registerFailed(userInfoBean.getMsg());
-                            }
-                        }
-                    }
-
-                    @Override
-                    public void onAfter(int id) {
-                        getView().hideLoading();
-                    }
-                });
-    }
-
-
-    private class RegisterContentEntity {
-
-        /**
-         * module : userregister
-         * email : 846035385@qq.com
-         * username : jxnk18
-         * passwd : xhbxysy9862377
-         * ckpasswd : xhbxysy9862377
-         */
-
-        private String module;
-        private String email;
-        private String username;
-        private String passwd;
-        private String ckpasswd;
-
-        RegisterContentEntity(String module, String email, String username, String passwd, String ckpasswd) {
-            this.module = module;
-            this.email = email;
-            this.username = username;
-            this.passwd = passwd;
-            this.ckpasswd = ckpasswd;
+        if (TextUtils.isEmpty(passwd)) {
+            ToastUtil.show("请填写密码");
+            return;
         }
+        if (TextUtils.isEmpty(code)) {
+            ToastUtil.show("请填写验证码");
+            return;
+        }
+        if (getView() == null) {
+            return;
+        }
+        Subscription subscription = TasksRepositoryProxy.getInstance().findPwd(username, code, passwd, new LoadTaskCallback<String>() {
+            @Override
+            public void onStart() {
+                getView().showLoading();
+            }
+
+            @Override
+            public void onCompleted() {
+                getView().hideLoading();
+            }
+
+            @Override
+            public void onTaskLoaded(String data) {
+                getView().resetPwd(data);
+            }
+
+            @Override
+            public void onDataNotAvailable(String msg) {
+                getView().resetPwdFailed(msg);
+            }
+        });
+        addSubscription(subscription);
+    }
+
+    @Override
+    public void sendSms(String mobile, int act, int uid) {
+        if (TextUtils.isEmpty(mobile)) {
+            ToastUtil.show("请输入手机号");
+            return;
+        }
+        TasksRepositoryProxy.getInstance().sendSms(mobile, act, uid, new LoadTaskCallback<String>() {
+            @Override
+            public void onStart() {
+                getView().showLoading();
+            }
+
+            @Override
+            public void onCompleted() {
+                getView().hideLoading();
+            }
+
+            @Override
+            public void onTaskLoaded(String data) {
+                getView().sendSmsCodeSuccess(data);
+            }
+
+            @Override
+            public void onDataNotAvailable(String msg) {
+                getView().sendSmsCodeFailed(msg);
+            }
+        });
     }
 }

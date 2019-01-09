@@ -1,5 +1,6 @@
 package com.stx.xhb.dmgameapp.mvp.ui.activity;
 
+import android.Manifest;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -10,31 +11,39 @@ import android.widget.RadioButton;
 import android.widget.RadioGroup;
 
 import com.jaeger.library.StatusBarUtil;
+import com.stx.core.utils.AppManager;
 import com.stx.xhb.dmgameapp.R;
+import com.stx.xhb.dmgameapp.base.BaseAppActitity;
+import com.stx.xhb.dmgameapp.mvp.ui.adapter.MainFragmentPageAdapter;
 import com.stx.xhb.dmgameapp.mvp.ui.main.ForumFragment;
 import com.stx.xhb.dmgameapp.mvp.ui.main.GameFragment;
-import com.stx.xhb.dmgameapp.mvp.ui.main.NewsFragment;
+import com.stx.xhb.dmgameapp.mvp.ui.main.InfoFragment;
 import com.stx.xhb.dmgameapp.mvp.ui.main.UserFragment;
-import com.stx.xhb.dmgameapp.adapter.MainFragmentPageAdapter;
 import com.stx.xhb.dmgameapp.widget.TipsToast;
 import com.umeng.analytics.MobclickAgent;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+/**
+ * @author xiao.haibin
+ */
+public class MainActivity extends BaseAppActitity {
+
     private ViewPager mainViewpager;
-    private List<Fragment> fragemnts ;
+    private List<Fragment> fragemnts;
     private RadioGroup rgp;
     private TipsToast tipsToast;
-    //退出时间
     private long exitTime = 0;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        StatusBarUtil.setColor(this,getResources().getColor(R.color.colorPrimary));
+    protected int getLayoutResource() {
+        return R.layout.activity_main;
+    }
+
+    @Override
+    protected void onInitialization(Bundle bundle) {
+        requestPemissions();
         initView();
         initData();
         setAdapter();
@@ -42,16 +51,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        MobclickAgent.onResume(this);
-    }
-
     //初始化控件
     private void initView() {
-        mainViewpager = (ViewPager) findViewById(R.id.main_viewpager);
-        rgp = (RadioGroup) findViewById(R.id.main_rgp);
+        mainViewpager = findViewById(R.id.main_viewpager);
+        rgp = findViewById(R.id.main_rgp);
         //设置默认第一个为选中状态
         RadioButton rb = (RadioButton) rgp.getChildAt(0);
         rb.setChecked(true);
@@ -60,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
     //初始化数据
     private void initData() {
         fragemnts = new ArrayList<>();
-        fragemnts.add(NewsFragment.newInstance());
+        fragemnts.add(InfoFragment.newInstance());
         fragemnts.add(GameFragment.newInstance());
         fragemnts.add(ForumFragment.newInstance());
         fragemnts.add(UserFragment.newInstance());
@@ -104,7 +107,6 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * 按两次退出应用
-     *
      * @param keyCode
      * @param event
      * @return
@@ -117,6 +119,7 @@ public class MainActivity extends AppCompatActivity {
                 showTips(R.drawable.tips_smile, "再按一次退出程序");
                 exitTime = System.currentTimeMillis();
             } else {
+                AppManager.getAppManager().finishAllActivity();
                 finish();
             }
             return true;
@@ -124,16 +127,8 @@ public class MainActivity extends AppCompatActivity {
         return super.onKeyDown(keyCode, event);
     }
 
-    @Override
-    protected void onPause() {
-        super.onPause();
-        MobclickAgent.onPause(this);
-    }
-
-
     /**
      * 自定义toast
-     *
      * @param iconResId 图片
      * @param tips      提示文字
      */
@@ -151,9 +146,17 @@ public class MainActivity extends AppCompatActivity {
         tipsToast.setText(tips);
     }
 
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-//        super.onSaveInstanceState(outState);
-        //此处解决有时候出现getActivity（）出现null的情况
+    private void requestPemissions() {
+        requestPermission(new OnPermissionResponseListener() {
+            @Override
+            public void onSuccess(String[] permissions) {
+
+            }
+
+            @Override
+            public void onFail() {
+                startAppSettings();
+            }
+        }, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.READ_PHONE_STATE);
     }
 }

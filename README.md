@@ -1,6 +1,6 @@
-# DMGameApp
+# 游戏资讯
 
-  DMGameApp是一款基于3DMGAME的一个游戏门户app，非官方版本，属于个人业余时间做的一个小项目；
+  游戏资讯是一款基于3DMGAME的一个游戏门户app，非官方版本，属于个人业余时间做的一个小项目；
   界面有一些仿网易新闻客户端
   
   主要分为四大板块：
@@ -25,8 +25,8 @@
  [Xbanner 图片轮播控件](https://github.com/xiaohaibin/XBanner) 
   
  [Butterknife  一键注解](https://github.com/JakeWharton/butterknife)
-  
- [Okhttputils 网络加载框架](https://github.com/hongyangAndroid/okhttputils)
+ 
+ [Retrofit+Rxjava 网络加载框架](https://github.com/square/retrofit)
   
  [Circleimageview 圆角图片处理](https://github.com/hdodenhof/CircleImageView)
   

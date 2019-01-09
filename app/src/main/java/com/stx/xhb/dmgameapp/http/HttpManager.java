@@ -20,11 +20,10 @@ import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 /**
- * Author: Mr.xiao on 2017/3/15
- *
- * @mail:xhb_199409@163.com
- * @github:https://github.com/xiaohaibin
- * @describe: HTTP请求工厂类
+ * Author Mr.xiao on 2017/3/15
+ * @mail xhb_199409@163.com
+ * @github https://github.com/xiaohaibin
+ * @describe  HTTP请求工厂类
  */
 public class HttpManager {
 
@@ -95,7 +94,6 @@ public class HttpManager {
     private static final long DEFAULT_TIMEOUT = 5;
 
     private OkHttpClient getOkHttpClient() {
-        final long currentTimeMillis = System.currentTimeMillis();
         loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
         HttpsUtils.SSLParams sslParams = HttpsUtils.getSslSocketFactory(null, null, null);
         //定制OkHttp

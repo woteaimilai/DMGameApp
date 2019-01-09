@@ -1,5 +1,8 @@
 package com.stx.core.mvp;
 
+import rx.Subscription;
+import rx.subscriptions.CompositeSubscription;
+
 /**
  * Author：xiaohaibin
  * Time：2017/9/12
@@ -7,16 +10,14 @@ package com.stx.core.mvp;
  * Github：https://github.com/xiaohaibin/
  * Describe：
  */
+public class BasePresenter<V extends IView> implements IPresenter<V> {
 
-public class BasePresenter<V extends IView,M extends IModel> implements IPresenter<V> {
+    private CompositeSubscription mCompositeSubscription;
 
-    protected static final String TAG="BasePresenter";
     protected V mView;
-    protected M mModel;
 
     @Override
     public void onStart() {
-
     }
 
     @Override
@@ -27,6 +28,7 @@ public class BasePresenter<V extends IView,M extends IModel> implements IPresent
     @Override
     public void detachView() {
         this.mView = null;
+        unSubsription();
     }
 
     @Override
@@ -38,8 +40,27 @@ public class BasePresenter<V extends IView,M extends IModel> implements IPresent
         return mView;
     }
 
-    public M getModel(){
-        return mModel;
+    public CompositeSubscription getCompositeSubscription() {
+        if (this.mCompositeSubscription == null) {
+            this.mCompositeSubscription = new CompositeSubscription();
+        }
+
+        return this.mCompositeSubscription;
     }
+
+    public void addSubscription(Subscription s) {
+        if (this.mCompositeSubscription == null) {
+            this.mCompositeSubscription = new CompositeSubscription();
+        }
+
+        this.mCompositeSubscription.add(s);
+    }
+
+    public void unSubsription() {
+        if (this.mCompositeSubscription != null) {
+            this.mCompositeSubscription.unsubscribe();
+        }
+    }
+
 
 }

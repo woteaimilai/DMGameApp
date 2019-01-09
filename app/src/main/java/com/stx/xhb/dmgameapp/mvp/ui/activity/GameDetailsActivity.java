@@ -13,9 +13,7 @@ import android.widget.TextView;
 import com.bumptech.glide.Glide;
 import com.stx.xhb.dmgameapp.R;
 import com.stx.xhb.dmgameapp.base.BaseAppActitity;
-import com.stx.xhb.dmgameapp.mvp.ui.fragment.GameDetailsCommonFragment;
-import com.stx.xhb.dmgameapp.mvp.ui.fragment.GameVideoFragment;
-import com.stx.xhb.dmgameapp.adapter.MainFragmentPageAdapter;
+import com.stx.xhb.dmgameapp.mvp.ui.adapter.MainFragmentPageAdapter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -71,7 +69,7 @@ public class GameDetailsActivity extends BaseAppActitity {
             }
             if (extras.containsKey("img")) {
                 String img = extras.getString("img");
-                Glide.with(this).load(img).placeholder(getResources().getDrawable(R.drawable.icon_gamed_efault)).into(ivGameImg);
+                Glide.with(this).load(img).placeholder(getResources().getDrawable(R.drawable.icon_game_efault)).into(ivGameImg);
             }
             if (extras.containsKey("name")) {
                 gameName = extras.getString("name");
@@ -82,9 +80,6 @@ public class GameDetailsActivity extends BaseAppActitity {
                 tvGameDetails.setText(gameDetails);
             }
         }
-        fragemnts.add(GameDetailsCommonFragment.newInstance("1", gameId, gameName));
-        fragemnts.add(GameDetailsCommonFragment.newInstance("2", gameId, gameName));
-        fragemnts.add(GameVideoFragment.newInstance(gameId, gameName));
         MainFragmentPageAdapter adapter = new MainFragmentPageAdapter(getSupportFragmentManager(), fragemnts, titleList);
         viewPager.setOffscreenPageLimit(fragemnts.size());
         viewPager.setAdapter(adapter);

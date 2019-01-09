@@ -2,6 +2,7 @@ package com.stx.xhb.dmgameapp.mvp.ui.main;
 
 
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.design.widget.TabLayout;
 import android.support.v4.view.ViewPager;
 import android.view.View;
@@ -14,7 +15,7 @@ import com.stx.xhb.dmgameapp.R;
 import com.stx.xhb.dmgameapp.data.entity.ForumChannelListBean;
 import com.stx.xhb.dmgameapp.mvp.contract.GetForumChannelContract;
 import com.stx.xhb.dmgameapp.mvp.presenter.GetForumChannelPresenter;
-import com.stx.xhb.dmgameapp.adapter.ForumViewPagerFragmentAdapter;
+import com.stx.xhb.dmgameapp.mvp.ui.adapter.ForumViewPagerFragmentAdapter;
 import com.stx.xhb.dmgameapp.utils.ToastUtil;
 
 import java.util.List;
@@ -51,7 +52,7 @@ public class ForumFragment extends BaseMvpFragment<GetForumChannelPresenter> imp
 
     @Override
     protected void lazyLoad() {
-        ((GetForumChannelPresenter) mPresenter).getChannelList();
+        mPresenter.getChannelList();
     }
 
     private void initView() {
@@ -110,6 +111,7 @@ public class ForumFragment extends BaseMvpFragment<GetForumChannelPresenter> imp
         }
     }
 
+    @NonNull
     @Override
     protected GetForumChannelPresenter onLoadPresenter() {
         return new GetForumChannelPresenter();

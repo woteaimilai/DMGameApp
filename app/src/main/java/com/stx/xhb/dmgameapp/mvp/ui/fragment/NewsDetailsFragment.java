@@ -1,7 +1,9 @@
 package com.stx.xhb.dmgameapp.mvp.ui.fragment;
 
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
@@ -11,19 +13,21 @@ import android.widget.TextView;
 
 import com.jude.easyrecyclerview.EasyRecyclerView;
 import com.jude.easyrecyclerview.decoration.DividerDecoration;
+import com.jude.easyrecyclerview.decoration.SpaceDecoration;
 import com.stx.core.base.BaseMvpFragment;
 import com.stx.core.utils.ScreenUtil;
 import com.stx.xhb.dmgameapp.R;
-import com.stx.xhb.dmgameapp.adapter.NewsDetailsAdapter;
 import com.stx.xhb.dmgameapp.data.entity.CommentListBean;
-import com.stx.xhb.dmgameapp.data.entity.NewsListBean;
+import com.stx.xhb.dmgameapp.data.entity.NewsAboutBean;
 import com.stx.xhb.dmgameapp.mvp.contract.GetNewsDetailsContract;
 import com.stx.xhb.dmgameapp.mvp.presenter.GetNewsDetailsPresenter;
+import com.stx.xhb.dmgameapp.mvp.ui.activity.NewsDetailsActivity;
+import com.stx.xhb.dmgameapp.mvp.ui.adapter.NewsDetailsAdapter;
 import com.stx.xhb.dmgameapp.share.ShareDialog;
 import com.stx.xhb.dmgameapp.utils.ToastUtil;
 import com.stx.xhb.dmgameapp.widget.widget.CustomTitlebar;
 
-import java.util.List;
+import java.util.Objects;
 
 import butterknife.Bind;
 import butterknife.OnClick;
@@ -44,17 +48,18 @@ public class NewsDetailsFragment extends BaseMvpFragment<GetNewsDetailsPresenter
     EasyRecyclerView rvList;
     @Bind(R.id.tv_comment_count)
     TextView tvCommentCount;
-    private String mId;
     private String mKey;
     private String mUrl;
     private String mImg;
+    private int uid=0;
     private NewsDetailsAdapter mNewsDetailsAdapter;
+    private String mAccurl;
 
-    public static NewsDetailsFragment newInstance(String url, String id,String key, String img) {
+    public static NewsDetailsFragment newInstance(String webUrl,String accurl,String key, String img) {
         Bundle args = new Bundle();
         NewsDetailsFragment fragment = new NewsDetailsFragment();
-        args.putString("url", url);
-        args.putString("id", id);
+        args.putString("webUrl", webUrl);
+        args.putString("accurl", accurl);
         args.putString("key", key);
         args.putString("img", img);
         fragment.setArguments(args);
@@ -62,6 +67,7 @@ public class NewsDetailsFragment extends BaseMvpFragment<GetNewsDetailsPresenter
     }
 
 
+    @NonNull
     @Override
     protected GetNewsDetailsPresenter onLoadPresenter() {
         return new GetNewsDetailsPresenter();
@@ -77,20 +83,30 @@ public class NewsDetailsFragment extends BaseMvpFragment<GetNewsDetailsPresenter
         initView();
         Bundle arguments = getArguments();
         if (arguments != null) {
-            if (arguments.containsKey("id")) {
-                mId = arguments.getString("id");
-            }
             if (arguments.containsKey("key")) {
                 mKey = arguments.getString("key");
                 mTitlebar.setTilte(mKey);
             }
-            if (arguments.containsKey("url")) {
-                mUrl = arguments.getString("url");
+            if (arguments.containsKey("webUrl")) {
+                mUrl = arguments.getString("webUrl");
+            }
+            if (arguments.containsKey("accurl")){
+                mAccurl = arguments.getString("accurl");
             }
             if (arguments.containsKey("img")) {
                 mImg = arguments.getString("img");
             }
         }
+        mNewsDetailsAdapter.setOnClickMoreCommentListener(new NewsDetailsAdapter.OnClickMoreCommentListener() {
+            @Override
+            public void onClick() {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                    ((NewsDetailsActivity)Objects.requireNonNull(getActivity())).vpContainer.setCurrentItem(1);
+                }else {
+                    ((NewsDetailsActivity)(getActivity())).vpContainer.setCurrentItem(1);
+                }
+            }
+        });
     }
 
     private void initView() {
@@ -111,35 +127,38 @@ public class NewsDetailsFragment extends BaseMvpFragment<GetNewsDetailsPresenter
     @Override
     protected void lazyLoad() {
         mNewsDetailsAdapter.setWebData(mUrl);
-        mPresenter.getNewsDetailsData(mId, mKey);
-        mPresenter.getCommentListData(mId);
+        mPresenter.getNewsDetailsData(mAccurl);
     }
 
     @Override
-    public void setNewsDetailsData(List<NewsListBean.ChannelEntity.HtmlEntity> listEntity) {
-        mNewsDetailsAdapter.addNewList(listEntity);
-        mNewsDetailsAdapter.addCommentListLabel();
+    public void setNewsDetailsData(NewsAboutBean newsAboutBean) {
+        mPresenter.getCommentListData(1,mAccurl,uid);
+        if (newsAboutBean.getList()!=null&&!newsAboutBean.getList().isEmpty()) {
+            mNewsDetailsAdapter.addListLabel("相关内容");
+            mNewsDetailsAdapter.addNewList(newsAboutBean.getList());
+        }
+    }
+
+    @Override
+    public void getNewsDetailsDataFailed(String msg) {
+        mPresenter.getCommentListData(1,mAccurl,uid);
+    }
+
+    @Override
+    public void getCommentListDataFailed(String msg) {
+        mNewsDetailsAdapter.addEmptyCommentFooter();
     }
 
     @Override
     public void setCommentListData(CommentListBean commentListData) {
-        if (commentListData.getComments().size() > 100) {
-            tvCommentCount.setText("99+");
+        if (commentListData.getTotal() > 100) {
+            tvCommentCount.setText(String.valueOf("99+"));
         } else {
-            tvCommentCount.setText(String.valueOf(commentListData.getComments().size()));
+            tvCommentCount.setText(String.valueOf(commentListData.getTotal()));
         }
-        mNewsDetailsAdapter.addAll(commentListData.getComments());
+        mNewsDetailsAdapter.addListLabel("最新评论");
+        mNewsDetailsAdapter.addAll(commentListData.getList());
         mNewsDetailsAdapter.addMoreCommentFooter();
-    }
-
-    @Override
-    public void getNewsDetailsDataFailed() {
-        mNewsDetailsAdapter.addCommentListLabel();
-    }
-
-    @Override
-    public void getCommentListDataFailed() {
-        mNewsDetailsAdapter.addEmptyCommentFooter();
     }
 
     @Override
@@ -153,7 +172,7 @@ public class NewsDetailsFragment extends BaseMvpFragment<GetNewsDetailsPresenter
     }
 
 
-    @OnClick({R.id.btn_comment, R.id.btn_share})
+    @OnClick({R.id.btn_comment, R.id.btn_share,R.id.tv_comment_count})
     public void onViewClicked(View view) {
         switch (view.getId()) {
             //评论对话框
@@ -165,6 +184,9 @@ public class NewsDetailsFragment extends BaseMvpFragment<GetNewsDetailsPresenter
                 if (!TextUtils.isEmpty(mUrl)) {
                     ShareDialog.share(getFragmentManager(), mKey, mUrl, mKey, mImg);
                 }
+                break;
+            case R.id.tv_comment_count:
+                ((NewsDetailsActivity)(getActivity())).vpContainer.setCurrentItem(1);
                 break;
             default:
                 break;

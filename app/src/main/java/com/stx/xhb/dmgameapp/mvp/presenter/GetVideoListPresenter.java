@@ -3,65 +3,43 @@ package com.stx.xhb.dmgameapp.mvp.presenter;
 import android.text.TextUtils;
 
 import com.stx.core.mvp.BasePresenter;
-import com.stx.core.utils.GsonUtil;
-import com.stx.xhb.dmgameapp.config.API;
-import com.stx.xhb.dmgameapp.config.Constants;
-import com.stx.xhb.dmgameapp.data.entity.NewsContentBean;
-import com.stx.xhb.dmgameapp.data.entity.VideoListBean;
+import com.stx.xhb.dmgameapp.data.callback.LoadTaskCallback;
+import com.stx.xhb.dmgameapp.data.entity.NewsPageBean;
+import com.stx.xhb.dmgameapp.data.remote.TasksRepositoryProxy;
 import com.stx.xhb.dmgameapp.mvp.contract.GetVideoContract;
-import com.zhy.http.okhttp.OkHttpUtils;
-import com.zhy.http.okhttp.callback.StringCallback;
 
-import okhttp3.Call;
-import okhttp3.Request;
+import rx.Subscription;
 
 /**
  * Author: Mr.xiao on 2017/9/18
- *
  * @mail:xhb_199409@163.com
  * @github:https://github.com/xiaohaibin
  * @describe:
  */
 
-public class GetVideoListPresenter extends BasePresenter<GetVideoContract.getVideoListView,GetVideoContract.getVideoModel> implements GetVideoContract.getVideoModel {
+public class GetVideoListPresenter extends BasePresenter<GetVideoContract.getVideoListView> implements GetVideoContract.getVideoModel {
 
     @Override
-    public void getVideoList(int page) {
-        if (getView()==null){
+    public void getVideoList(int currentPage) {
+        if (getView() == null) {
             return;
         }
-        OkHttpUtils.postString()
-                .content(GsonUtil.newGson().toJson(new NewsContentBean("2", page)))
-                .url(API.NEWS_CHANNEL_DATA)
-                .build()
-                .execute(new StringCallback() {
-                    @Override
-                    public void onBefore(Request request, int id) {
-                        getView().showLoading();
-                    }
+        Subscription subscription = TasksRepositoryProxy.getInstance().getVideoPage(currentPage, new LoadTaskCallback<NewsPageBean>() {
+            @Override
+            public void onTaskLoaded(NewsPageBean data) {
+                getView().getVideoListSuccess(data);
+            }
 
-                    @Override
-                    public void onError(Call call, Exception e, int id) {
-                        getView().getVideoListFailed(e.getMessage());
-                    }
+            @Override
+            public void onDataNotAvailable(String msg) {
+                getView().getVideoListFailed(TextUtils.isEmpty(msg) ? "服务器请求失败，请重试" : msg);
+            }
 
-                    @Override
-                    public void onResponse(String response, int id) {
-                        if (!TextUtils.isEmpty(response)) {
-                            VideoListBean videoListBean = GsonUtil.newGson().fromJson(response, VideoListBean.class);
-                            if (videoListBean.getCode() == Constants.SERVER_SUCCESS) {
-                                getView().getVideoListSuccess(videoListBean);
-                            } else {
-                                getView().hideLoading();
-                                getView().getVideoListFailed(videoListBean.getMsg());
-                            }
-                        }
-                    }
-
-                    @Override
-                    public void onAfter(int id) {
-                        getView().hideLoading();
-                    }
-                });
+            @Override
+            public void onCompleted() {
+                getView().hideLoading();
+            }
+        });
+        addSubscription(subscription);
     }
 }

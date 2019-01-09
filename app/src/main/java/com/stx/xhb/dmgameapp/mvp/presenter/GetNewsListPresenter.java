@@ -1,141 +1,147 @@
 package com.stx.xhb.dmgameapp.mvp.presenter;
 
-import android.content.Context;
 import android.text.TextUtils;
 
-import com.qq.e.ads.nativ.ADSize;
-import com.qq.e.ads.nativ.NativeExpressAD;
-import com.qq.e.ads.nativ.NativeExpressADView;
-import com.qq.e.comm.util.AdError;
 import com.stx.core.mvp.BasePresenter;
-import com.stx.core.utils.GsonUtil;
-import com.stx.xhb.dmgameapp.config.API;
-import com.stx.xhb.dmgameapp.config.Constants;
-import com.stx.xhb.dmgameapp.data.entity.NewsContentBean;
-import com.stx.xhb.dmgameapp.data.entity.NewsListBean;
+import com.stx.xhb.dmgameapp.data.callback.LoadTaskCallback;
+import com.stx.xhb.dmgameapp.data.entity.NewsPageBean;
+import com.stx.xhb.dmgameapp.data.remote.TasksRepositoryProxy;
 import com.stx.xhb.dmgameapp.mvp.contract.GetNewsListContract;
-import com.zhy.http.okhttp.OkHttpUtils;
-import com.zhy.http.okhttp.callback.StringCallback;
 
-import java.util.List;
-
-import okhttp3.Call;
-import okhttp3.Request;
+import rx.Subscription;
 
 /**
  * Author：xiaohaibin
  * Time：2017/9/18
  * Emil：xhb_199409@163.com
  * Github：https://github.com/xiaohaibin/
- * Describe：
+ * Describe：热点新闻
  */
-
-public class GetNewsListPresenter extends BasePresenter<GetNewsListContract.getNewListView, GetNewsListContract.getNewsListModel> implements GetNewsListContract.getNewsListModel {
-
-    private NativeExpressAD contentAD;
-    private NativeExpressADView nativeExpressADView;
+public class GetNewsListPresenter extends BasePresenter<GetNewsListContract.getNewListView> implements GetNewsListContract.getNewsListModel {
 
     @Override
-    public void getNewsList(String appId, int page) {
+    public void getNewsList(int page) {
         if (getView() == null) {
             return;
         }
-        OkHttpUtils.postString()
-                .content(GsonUtil.newGson().toJson(new NewsContentBean(appId, page)))
-                .url(API.NEWS_CHANNEL_DATA)
-                .build()
-                .execute(new StringCallback() {
-                    @Override
-                    public void onBefore(Request request, int id) {
-                        getView().showLoading();
-                    }
+        Subscription subscription = TasksRepositoryProxy.getInstance().getNews(page, new LoadTaskCallback<NewsPageBean>() {
+            @Override
+            public void onStart() {
+                getView().showLoading();
+            }
 
-                    @Override
-                    public void onError(Call call, Exception e, int id) {
-                        getView().getNewListFailed(e.getMessage());
-                    }
+            @Override
+            public void onTaskLoaded(NewsPageBean data) {
+                getView().getNewListSuccess(data);
+            }
 
-                    @Override
-                    public void onResponse(String response, int id) {
-                        if (!TextUtils.isEmpty(response)) {
-                            NewsListBean newsListBean = GsonUtil.newGson().fromJson(response, NewsListBean.class);
-                            if (newsListBean.getCode() == Constants.SERVER_SUCCESS) {
-                                getView().getNewListSuccess(newsListBean);
-                            } else {
-                                getView().hideLoading();
-                                getView().getNewListFailed(TextUtils.isEmpty(newsListBean.getMsg()) ? "服务器请求失败，请重试" : newsListBean.getMsg());
-                            }
-                        }
-                    }
+            @Override
+            public void onDataNotAvailable(String msg) {
+                getView().getNewListFailed(TextUtils.isEmpty(msg) ? "服务器请求失败，请重试" : msg);
+            }
 
-                    @Override
-                    public void onAfter(int id) {
-                        getView().hideLoading();
-                    }
-                });
+            @Override
+            public void onCompleted() {
+                getView().hideLoading();
+            }
+        });
+        addSubscription(subscription);
+    }
+
+
+    @Override
+    public void getHotNewsList(int currentPage) {
+        if (getView() == null) {
+            return;
+        }
+        Subscription subscription = TasksRepositoryProxy.getInstance().getHowNews(currentPage, new LoadTaskCallback<NewsPageBean>() {
+
+            @Override
+            public void onStart() {
+                getView().showLoading();
+            }
+
+            @Override
+            public void onTaskLoaded(NewsPageBean data) {
+                getView().getNewListSuccess(data);
+            }
+
+            @Override
+            public void onDataNotAvailable(String msg) {
+                getView().getNewListFailed(TextUtils.isEmpty(msg) ? "服务器请求失败，请重试" : msg);
+            }
+
+            @Override
+            public void onCompleted() {
+                getView().hideLoading();
+            }
+        });
+        addSubscription(subscription);
     }
 
     @Override
-    public void loadAD(Context context) {
-        if (contentAD == null) {
-            contentAD = new NativeExpressAD(context, new ADSize(ADSize.FULL_WIDTH, ADSize.AUTO_HEIGHT), Constants.APPID, Constants.NativePosID, new NativeExpressAD.NativeExpressADListener() {
-                @Override
-                public void onNoAD(AdError adError) {
-
-                }
-
-                @Override
-                public void onADLoaded(List<NativeExpressADView> list) {
-                    if (nativeExpressADView != null) {
-                        nativeExpressADView.destroy();
-                    }
-                    if (getView() != null && !list.isEmpty()) {
-                        nativeExpressADView = list.get(0);
-                    }
-                    getView().getADData(nativeExpressADView);
-                }
-
-                @Override
-                public void onRenderFail(NativeExpressADView nativeExpressADView) {
-
-                }
-
-                @Override
-                public void onRenderSuccess(NativeExpressADView nativeExpressADView) {
-
-                }
-
-                @Override
-                public void onADExposure(NativeExpressADView nativeExpressADView) {
-
-                }
-
-                @Override
-                public void onADClicked(NativeExpressADView nativeExpressADView) {
-
-                }
-
-                @Override
-                public void onADClosed(NativeExpressADView nativeExpressADView) {
-
-                }
-
-                @Override
-                public void onADLeftApplication(NativeExpressADView nativeExpressADView) {
-
-                }
-
-                @Override
-                public void onADOpenOverlay(NativeExpressADView nativeExpressADView) {
-
-                }
-
-                @Override
-                public void onADCloseOverlay(NativeExpressADView nativeExpressADView) {
-
-                }
-            });
+    public void getOriginalPage(int currentPage) {
+        if (getView() == null) {
+            return;
         }
-        contentAD.loadAD(1);
+        Subscription subscription = TasksRepositoryProxy.getInstance().getOriginalPage(currentPage, new LoadTaskCallback<NewsPageBean>() {
+            @Override
+            public void onStart() {
+                getView().showLoading();
+            }
+
+            @Override
+            public void onTaskLoaded(NewsPageBean data) {
+                getView().getNewListSuccess(data);
+            }
+
+            @Override
+            public void onDataNotAvailable(String msg) {
+                getView().getNewListFailed(TextUtils.isEmpty(msg) ? "服务器请求失败，请重试" : msg);
+            }
+
+            @Override
+            public void onCompleted() {
+                getView().hideLoading();
+            }
+        });
+        addSubscription(subscription);
+    }
+
+
+    @Override
+    public void getAmusePage(int currentPage) {
+        if (getView() == null) {
+            return;
+        }
+        Subscription subscription = TasksRepositoryProxy.getInstance().getAmusePage(currentPage,new LoadTaskCallback<NewsPageBean>() {
+
+            @Override
+            public void onStart() {
+                getView().showLoading();
+            }
+
+            @Override
+            public void onTaskLoaded(NewsPageBean data) {
+                getView().getNewListSuccess(data);
+            }
+
+            @Override
+            public void onDataNotAvailable(String msg) {
+                getView().getNewListFailed(TextUtils.isEmpty(msg) ? "服务器请求失败，请重试" : msg);
+            }
+
+            @Override
+            public void onCompleted() {
+                getView().hideLoading();
+            }
+        });
+        addSubscription(subscription);
+    }
+
+    @Override
+    public void detachView() {
+        super.detachView();
+        TasksRepositoryProxy.getInstance().release();
     }
 }

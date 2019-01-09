@@ -22,8 +22,7 @@ import okhttp3.Request;
  * Github：https://github.com/xiaohaibin/
  * Describe：
  */
-
-public class GetForumChannelPresenter extends BasePresenter<GetForumChannelContract.getChannelListView,GetForumChannelContract.getChanelModel> implements GetForumChannelContract.getChanelModel {
+public class GetForumChannelPresenter extends BasePresenter<GetForumChannelContract.getChannelListView> implements GetForumChannelContract.getChanelModel {
 
     @Override
     public void getChannelList() {
